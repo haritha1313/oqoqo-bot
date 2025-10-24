@@ -48,6 +48,7 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
 ENABLE_LLM = os.getenv("ENABLE_LLM", "false").lower() == "true"
 DOCS_DIR = os.getenv("DOCS_DIR", "docs")
+REPO_PATH = os.getenv("REPO_PATH", None)
 
 # Paths to exclude from documentation analysis (bot infrastructure, not product code)
 EXCLUDED_PATHS = ["scripts/", ".github/", "tests/"]
@@ -110,8 +111,8 @@ def run_hotpath_analysis() -> Optional[HotPathAnalysis]:
     print(f"[Hot-Path] Base: {BASE_SHA[:8]} -> Head: {HEAD_SHA[:8]}")
 
     try:
-        # Initialize analyzer - auto-detect repo root (find_repo_root() handles subdirectories)
-        analyzer = HotPathAnalyzer(repo_path=None, verbose=True)
+        # Initialize analyzer - use REPO_PATH from environment or auto-detect
+        analyzer = HotPathAnalyzer(repo_path=REPO_PATH, verbose=True)
 
         # Run complete analysis with all layers
         analysis = analyzer.analyze_changes(

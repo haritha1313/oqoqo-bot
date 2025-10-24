@@ -55,6 +55,7 @@ runs:
 
     - name: Run OQOQO Bot
       shell: bash
+      working-directory: ${{ github.workspace }}
       env:
         GITHUB_TOKEN: ${{ inputs.github-token }}
         REPO: ${{ github.repository }}
@@ -66,13 +67,12 @@ runs:
         ANTHROPIC_API_KEY: ${{ inputs.anthropic-api-key }}
         DOCS_DIR: ${{ inputs.docs-dir }}
         DOCS_EXTRAS: ${{ inputs.docs-extras }}
+        REPO_PATH: ${{ github.workspace }}
       run: |
-        cd ${{ github.action_path }}/src/hotpath
-        export PYTHONPATH="${PYTHONPATH}:$(pwd)"
-        cd ..
+        export PYTHONPATH="${PYTHONPATH}:${{ github.action_path }}/src/hotpath"
 
         if [ "${{ inputs.mode }}" == "update-docs" ]; then
-          python update_docs.py
+          python ${{ github.action_path }}/src/update_docs.py
         else
-          python pr_bot.py
+          python ${{ github.action_path }}/src/pr_bot.py
         fi

@@ -39,6 +39,7 @@ HEAD_SHA = os.getenv("HEAD_SHA", "")
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
+REPO_PATH = os.getenv("REPO_PATH")
 
 # Find repository root (where .git directory is)
 def find_repo_root() -> Path:
@@ -54,7 +55,7 @@ def find_repo_root() -> Path:
         return script_dir.parent
     return Path.cwd()
 
-REPO_ROOT = find_repo_root()
+REPO_ROOT = Path(REPO_PATH) if REPO_PATH else find_repo_root()
 DOCS_DIR_REL = os.getenv("DOCS_DIR", "docs")  # Relative path from repo root
 DOCS_DIR = str(REPO_ROOT / DOCS_DIR_REL)  # Absolute path to docs directory
 
