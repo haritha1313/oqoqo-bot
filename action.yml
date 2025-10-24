@@ -1,0 +1,78 @@
+name: 'OQOQO Bot - PR Analysis & Documentation'
+description: 'Intelligent PR analysis with Hot-Path semantic analysis and AI-powered documentation generation'
+author: 'OQOQO Bot Team'
+
+branding:
+  icon: 'git-pull-request'
+  color: 'blue'
+
+inputs:
+  github-token:
+    description: 'GitHub token for API access'
+    required: true
+    default: ${{ github.token }}
+
+  mode:
+    description: 'Operation mode: "analyze" for PR analysis or "update-docs" for documentation generation'
+    required: false
+    default: 'analyze'
+
+  enable-llm:
+    description: 'Enable LLM features for AI-powered suggestions (true/false)'
+    required: false
+    default: 'true'
+
+  openai-api-key:
+    description: 'OpenAI API key (required if enable-llm is true)'
+    required: false
+
+  anthropic-api-key:
+    description: 'Anthropic API key (alternative to OpenAI)'
+    required: false
+
+  docs-dir:
+    description: 'Documentation directory'
+    required: false
+    default: 'docs'
+
+  docs-extras:
+    description: 'Additional documentation files (comma-separated)'
+    required: false
+    default: 'README.md'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      shell: bash
+      run: |
+        pip install requests openai anthropic
+
+    - name: Run OQOQO Bot
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+        REPO: ${{ github.repository }}
+        PR_NUMBER: ${{ github.event.pull_request.number || github.event.issue.number }}
+        BASE_SHA: ${{ github.event.pull_request.base.sha || '' }}
+        HEAD_SHA: ${{ github.event.pull_request.head.sha || '' }}
+        ENABLE_LLM: ${{ inputs.enable-llm }}
+        OPENAI_API_KEY: ${{ inputs.openai-api-key }}
+        ANTHROPIC_API_KEY: ${{ inputs.anthropic-api-key }}
+        DOCS_DIR: ${{ inputs.docs-dir }}
+        DOCS_EXTRAS: ${{ inputs.docs-extras }}
+      run: |
+        cd ${{ github.action_path }}/src/hotpath
+        export PYTHONPATH="${PYTHONPATH}:$(pwd)"
+        cd ..
+
+        if [ "${{ inputs.mode }}" == "update-docs" ]; then
+          python update_docs.py
+        else
+          python pr_bot.py
+        fi

@@ -37,82 +37,53 @@ When you open a PR, OQOQO Bot will:
 
 ---
 
-## 🚀 Quick Start (5 Minutes)
+## 🚀 Quick Start (2 Minutes)
 
-### Option 1: Add to Your Existing Repository
+### GitHub Action (Recommended) ⭐
 
-**Step 1: Copy the bot files**
+The easiest way! Just create a workflow file:
 
-```bash
-# Clone the OQOQO Bot repository
-git clone https://github.com/YOUR_USERNAME/oqoqo-bot.git
-
-# Go to your project repository
-cd /path/to/your/project
-
-# Copy the bot files
-cp -r ../oqoqo-bot/src ./bot
-cp ../oqoqo-bot/requirements.txt ./bot-requirements.txt
-cp ../oqoqo-bot/.github/workflows/pr-bot.yml ./.github/workflows/
-```
-
-**Step 2: Update the workflow file**
-
-Edit `.github/workflows/pr-bot.yml` and change the paths:
+**Step 1:** Create `.github/workflows/oqoqo-bot.yml` in your repository:
 
 ```yaml
-# Change this line (around line 54):
-cd src/hotpath
+name: OQOQO Bot
 
-# To match where you placed the files:
-cd bot/hotpath
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  pull-requests: write
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: YOUR_USERNAME/oqoqo-bot@v1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          enable-llm: 'true'  # Set to 'false' for free mode
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
 ```
 
-**Step 3: Install dependencies**
+**Step 2:** (Optional) Add API key for AI features:
+- Go to **Settings** → **Secrets and variables** → **Actions**
+- Add `OPENAI_API_KEY` or `ANTHROPIC_API_KEY`
 
-Add to your CI/CD or local setup:
-```bash
-pip install -r bot-requirements.txt
-```
+**Step 3:** Create a PR and watch the bot comment! 🎉
 
-**Step 4: Configure GitHub Actions permissions**
-
-1. Go to your repository on GitHub
-2. Navigate to **Settings** → **Actions** → **General**
-3. Scroll to **Workflow permissions**
-4. Select **"Read and write permissions"**
-5. Check **"Allow GitHub Actions to create and approve pull requests"**
-6. Click **Save**
-
-**Step 5: (Optional) Enable AI Features**
-
-To enable AI-powered documentation suggestions:
-
-1. Get an API key:
-   - **OpenAI**: https://platform.openai.com/api-keys
-   - **Anthropic**: https://console.anthropic.com/settings/keys
-
-2. Add to GitHub Secrets:
-   - Go to **Settings** → **Secrets and variables** → **Actions**
-   - Click **"New repository secret"**
-   - Name: `OPENAI_API_KEY` or `ANTHROPIC_API_KEY`
-   - Value: Your API key
-   - Click **Add secret**
-
-**Step 6: Test it!**
-
-1. Create a test branch and make some code changes
-2. Open a pull request
-3. Wait ~30 seconds for the bot to post a comment
-4. Try commenting `/update-docs` to test documentation generation
-
-✅ **Done!** OQOQO Bot is now active on your repository.
+See [example-usage.yml](.github/workflows/example-usage.yml) for the full workflow including `/update-docs` command.
 
 ---
 
-### Option 2: Use as a GitHub Action (Simplest)
+### Manual Installation (Advanced)
 
-Coming soon! We're working on publishing this as a GitHub Action for one-line setup.
+Prefer to copy the source code directly? See [INSTALL.md](INSTALL.md) for detailed instructions.
+
 
 ---
 
