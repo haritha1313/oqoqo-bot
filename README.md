@@ -27,23 +27,29 @@ name: OQOQO Bot
 on:
   pull_request:
     types: [opened, synchronize, reopened]
+  issue_comment:
+    types: [created]
 
 permissions:
+  contents: read
   pull-requests: write
+  issues: write
 
 jobs:
   analyze:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - uses: YOUR_USERNAME/oqoqo-bot@v1
+      - name: OQOQO Bot – PR Analysis & Documentation
+        uses: haritha1313/oqoqo-bot@v1
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          enable-llm: 'true'  # Set to 'false' for free mode
-          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          enable-llm: 'true' # Set to 'false' for free mode
+          anthropic-api-key: ${{ secrets.ANTHROPIC_API_KEY }}
 ```
 
 **Step 2:** (Optional) Add API key for AI features:
