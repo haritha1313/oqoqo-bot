@@ -59,14 +59,22 @@ class LLMDocGenerator:
     3. Local models (for privacy/cost)
     """
 
-    # Cost per 1K tokens (approximate, as of 2024)
+    # Cost per 1K tokens (approximate, as of 2025)
     COSTS = {
         "gpt-4-turbo": {"input": 0.01, "output": 0.03},
         "gpt-4": {"input": 0.03, "output": 0.06},
         "gpt-3.5-turbo": {"input": 0.0005, "output": 0.0015},
+        "claude-3-opus-20240229": {"input": 0.015, "output": 0.075},
         "claude-3-opus": {"input": 0.015, "output": 0.075},
+        "claude-3-7-sonnet-20250219": {"input": 0.003, "output": 0.015},  # Latest Sonnet (Feb 2025)
+        "claude-3-5-sonnet-20240620": {"input": 0.003, "output": 0.015},  # Deprecated Oct 2025
+        "claude-3-5-sonnet-20241022": {"input": 0.003, "output": 0.015},  # Deprecated Oct 2025
+        "claude-3-5-sonnet": {"input": 0.003, "output": 0.015},
+        "claude-3-sonnet-20240229": {"input": 0.003, "output": 0.015},
         "claude-3-sonnet": {"input": 0.003, "output": 0.015},
-        "claude-3-5-sonnet-20241022": {"input": 0.003, "output": 0.015},
+        "claude-3-5-haiku-20241022": {"input": 0.00025, "output": 0.00125},  # Latest Haiku
+        "claude-3-haiku-20240307": {"input": 0.00025, "output": 0.00125},
+        "claude-3-haiku": {"input": 0.00025, "output": 0.00125},
         "local": {"input": 0, "output": 0},
     }
 
@@ -108,9 +116,15 @@ class LLMDocGenerator:
         elif self.provider == LLMProvider.OPENAI:
             self.model = "gpt-4-turbo"
         elif self.provider == LLMProvider.ANTHROPIC:
-            self.model = "claude-3-5-sonnet-20241022"
+            # Use latest Sonnet model (Claude 3.7 - February 2025)
+            self.model = "claude-3-7-sonnet-20250219"
         else:
             self.model = "local-model"
+        
+        # Validate model exists in COSTS dict (for pricing calculation)
+        if self.model not in self.COSTS:
+            # If model not in pricing dict, warn but continue
+            print(f"Warning: Model '{self.model}' not found in pricing dictionary. Cost calculation may be inaccurate.")
 
         # Initialize client
         self.client = None
@@ -414,20 +428,52 @@ Generate your response as JSON:
         return response_text, tokens_used
 
     def _call_anthropic(self, prompt: str) -> Tuple[str, int]:
-        """Call Anthropic Claude API"""
-        response = self.client.messages.create(
-            model=self.model,
-            max_tokens=self.max_tokens,
-            temperature=self.temperature,
-            messages=[
-                {"role": "user", "content": prompt}
-            ]
-        )
+        """Call Anthropic Claude API with fallback model support"""
+        # Try primary model, then fallback to known working date-specific versions
+        models_to_try = [self.model]
+        
+        # Add fallback models in order of preference (date-specific versions are more reliable)
+        # Note: Opus is excluded as it's 5x more expensive
+        fallback_models = [
+            "claude-3-7-sonnet-20250219",  # Latest Sonnet (Feb 2025)
+            "claude-3-5-haiku-20241022",   # Cheaper alternative
+            "claude-3-haiku-20240307",     # Older Haiku fallback
+        ]
+        
+        # Only add fallbacks that aren't already being tried
+        for fallback in fallback_models:
+            if fallback not in models_to_try:
+                models_to_try.append(fallback)
+        
+        last_error = None
+        for model_name in models_to_try:
+            try:
+                response = self.client.messages.create(
+                    model=model_name,
+                    max_tokens=self.max_tokens,
+                    temperature=self.temperature,
+                    messages=[
+                        {"role": "user", "content": prompt}
+                    ]
+                )
 
-        response_text = response.content[0].text
-        tokens_used = response.usage.input_tokens + response.usage.output_tokens
+                response_text = response.content[0].text
+                tokens_used = response.usage.input_tokens + response.usage.output_tokens
+                
+                # If we used a fallback model, update self.model for consistency
+                if model_name != self.model:
+                    print(f"Note: Using fallback model '{model_name}' instead of '{self.model}'")
+                    self.model = model_name
 
-        return response_text, tokens_used
+                return response_text, tokens_used
+            except Exception as e:
+                last_error = e
+                if model_name == models_to_try[-1]:  # Last model to try
+                    raise
+                print(f"Warning: Model '{model_name}' failed ({type(e).__name__}), trying fallback...")
+        
+        # Should never reach here, but just in case
+        raise last_error or RuntimeError("Failed to call Anthropic API")
 
     def _call_local(self, prompt: str) -> Tuple[str, int]:
         """Call local model (placeholder for future implementation)"""
