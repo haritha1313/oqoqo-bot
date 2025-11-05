@@ -10,6 +10,7 @@ This allows all 5 Hot-Path layers to run on local repos in CI/CD.
 import subprocess
 import tarfile
 import io
+import os
 from typing import Optional, List, Dict
 from pathlib import Path
 
@@ -137,17 +138,29 @@ def find_repo_root(start_path: Optional[Path] = None) -> Path:
     Find git repository root.
 
     Args:
-        start_path: Starting directory (defaults to cwd)
+        start_path: Starting directory (defaults to cwd, or GITHUB_WORKSPACE if available)
 
     Returns:
         Path to repository root
     """
-    current = (start_path or Path.cwd()).resolve()
+    # In GitHub Actions, prefer GITHUB_WORKSPACE if available
+    if start_path is None:
+        github_workspace = os.getenv("GITHUB_WORKSPACE")
+        if github_workspace:
+            start_path = Path(github_workspace)
+        else:
+            start_path = Path.cwd()
+    
+    # Convert string to Path if needed
+    if isinstance(start_path, str):
+        start_path = Path(start_path)
+    
+    current = start_path.resolve()
     while current != current.parent:
         if (current / ".git").exists():
             return current
         current = current.parent
-    raise RuntimeError("Not in a git repository")
+    raise RuntimeError(f"Not in a git repository (searched from: {start_path})")
 
 
 class LocalGitAdapter:
@@ -174,9 +187,22 @@ class LocalGitAdapter:
         Initialize adapter.
 
         Args:
-            repo_path: Path to repository (defaults to finding from cwd)
+            repo_path: Path to repository (can be Path or str, defaults to finding from cwd/GITHUB_WORKSPACE)
         """
-        self.repo_path = repo_path or find_repo_root()
+        # Convert string to Path if needed
+        if repo_path is not None and isinstance(repo_path, str):
+            repo_path = Path(repo_path)
+        
+        if repo_path is None:
+            self.repo_path = find_repo_root()
+        else:
+            # Verify the path exists and is a git repo
+            repo_path = Path(repo_path).resolve()
+            if not (repo_path / ".git").exists():
+                # Try to find repo root from this path
+                self.repo_path = find_repo_root(repo_path)
+            else:
+                self.repo_path = repo_path
 
     def get_tarball(self, ref: str) -> bytes:
         """Get tarball for ref"""

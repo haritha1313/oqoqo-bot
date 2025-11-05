@@ -39,12 +39,20 @@ HEAD_SHA = os.getenv("HEAD_SHA", "")
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
-REPO_PATH = os.getenv("REPO_PATH")
+# Get repo path from environment, with fallback to GITHUB_WORKSPACE
+REPO_PATH_STR = os.getenv("REPO_PATH") or os.getenv("GITHUB_WORKSPACE")
 
 # Find repository root (where .git directory is)
 def find_repo_root() -> Path:
     """Find the repository root by looking for .git directory"""
-    current = Path.cwd().resolve()
+    # In GitHub Actions, prefer GITHUB_WORKSPACE if available
+    github_workspace = os.getenv("GITHUB_WORKSPACE")
+    if github_workspace:
+        start_path = Path(github_workspace)
+    else:
+        start_path = Path.cwd()
+    
+    current = start_path.resolve()
     while current != current.parent:
         if (current / ".git").exists():
             return current
@@ -53,9 +61,9 @@ def find_repo_root() -> Path:
     script_dir = Path(__file__).parent.resolve()
     if script_dir.name == "scripts":
         return script_dir.parent
-    return Path.cwd()
+    raise RuntimeError(f"Not in a git repository (searched from: {start_path})")
 
-REPO_ROOT = Path(REPO_PATH) if REPO_PATH else find_repo_root()
+REPO_ROOT = Path(REPO_PATH_STR) if REPO_PATH_STR else find_repo_root()
 DOCS_DIR_REL = os.getenv("DOCS_DIR", "docs")  # Relative path from repo root
 DOCS_DIR = str(REPO_ROOT / DOCS_DIR_REL)  # Absolute path to docs directory
 

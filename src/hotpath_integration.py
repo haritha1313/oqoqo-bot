@@ -112,9 +112,10 @@ class HotPathAnalyzer:
         Initialize analyzer.
 
         Args:
-            repo_path: Path to git repository (auto-detected if None)
+            repo_path: Path to git repository (can be Path or str, auto-detected if None)
             verbose: Enable verbose output
         """
+        # LocalGitAdapter can handle both Path and str, so pass as-is
         self.adapter = LocalGitAdapter(repo_path)
         self.verbose = verbose
 

@@ -70,6 +70,7 @@ runs:
         REPO_PATH: ${{ github.workspace }}
       run: |
         export PYTHONPATH="${PYTHONPATH}:${{ github.action_path }}/src/hotpath"
+        cd "${{ github.workspace }}"
 
         if [ "${{ inputs.mode }}" == "update-docs" ]; then
           python ${{ github.action_path }}/src/update_docs.py

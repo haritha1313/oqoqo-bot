@@ -48,7 +48,9 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
 ENABLE_LLM = os.getenv("ENABLE_LLM", "false").lower() == "true"
 DOCS_DIR = os.getenv("DOCS_DIR", "docs")
-REPO_PATH = os.getenv("REPO_PATH", None)
+# Get repo path from environment, with fallback to GITHUB_WORKSPACE
+REPO_PATH_STR = os.getenv("REPO_PATH") or os.getenv("GITHUB_WORKSPACE")
+REPO_PATH = Path(REPO_PATH_STR) if REPO_PATH_STR else None
 
 # Paths to exclude from documentation analysis (bot infrastructure, not product code)
 EXCLUDED_PATHS = ["scripts/", ".github/", "tests/"]
