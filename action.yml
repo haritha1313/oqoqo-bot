@@ -54,21 +54,41 @@ runs:
         pip install requests openai anthropic
 
     - name: Fetch PR details (if needed)
+      shell: bash
       if: github.event_name == 'issue_comment' || github.event.pull_request.base.sha == ''
-      uses: actions/github-script@v7
-      with:
-        github-token: ${{ inputs.github-token }}
-      id: pr-details
-      script: |
-        const prNumber = context.payload.issue?.number || context.payload.pull_request?.number;
-        const pr = await github.rest.pulls.get({
-          owner: context.repo.owner,
-          repo: context.repo.repo,
-          pull_number: prNumber
-        });
-        core.exportVariable('BASE_SHA', pr.data.base.sha);
-        core.exportVariable('HEAD_SHA', pr.data.head.sha);
-        console.log(`Fetched PR details: base=${pr.data.base.sha.substring(0, 8)}, head=${pr.data.head.sha.substring(0, 8)}`);
+      env:
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+        REPO: ${{ github.repository }}
+        PR_NUMBER: ${{ github.event.pull_request.number || github.event.issue.number }}
+      run: |
+        # Fetch PR details using GitHub API (Python is already installed)
+        python3 << 'EOF'
+        import os
+        import json
+        import urllib.request
+        
+        token = os.environ['GITHUB_TOKEN']
+        repo = os.environ['REPO']
+        pr_number = os.environ['PR_NUMBER']
+        
+        url = f"https://api.github.com/repos/{repo}/pulls/{pr_number}"
+        req = urllib.request.Request(url)
+        req.add_header("Authorization", f"Bearer {token}")
+        req.add_header("Accept", "application/vnd.github+json")
+        
+        with urllib.request.urlopen(req) as response:
+            pr_data = json.loads(response.read())
+        
+        base_sha = pr_data['base']['sha']
+        head_sha = pr_data['head']['sha']
+        
+        # Write to GITHUB_ENV for next step
+        with open(os.environ['GITHUB_ENV'], 'a') as f:
+            f.write(f"BASE_SHA={base_sha}\n")
+            f.write(f"HEAD_SHA={head_sha}\n")
+        
+        print(f"Fetched PR details: base={base_sha[:8]}, head={head_sha[:8]}")
+        EOF
 
     - name: Run OQOQO Bot
       shell: bash
