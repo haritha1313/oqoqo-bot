@@ -546,8 +546,10 @@ def main():
         print("\nAdd as GitHub Secret in your repository settings.")
         sys.exit(1)
 
+    # Validate environment - SHA values should be set by action.yml
     if not BASE_SHA or not HEAD_SHA:
         print("\nERROR: BASE_SHA and HEAD_SHA must be set")
+        print("This should be handled by the GitHub Action workflow.")
         sys.exit(1)
 
     print(f"\nRepository: {REPO}")

@@ -475,9 +475,10 @@ def main():
     print("Hot-Path PR Bot")
     print("=" * 80)
 
-    # Validate environment
+    # Validate environment - SHA values should be set by action.yml
     if not BASE_SHA or not HEAD_SHA:
         print("Error: BASE_SHA and HEAD_SHA must be set")
+        print("This should be handled by the GitHub Action workflow.")
         sys.exit(1)
 
     print(f"\nRepository: {REPO}")
